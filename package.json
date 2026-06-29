@@ -1,0 +1,53 @@
+{
+  "name": "repo-organizer",
+  "version": "0.1.0",
+  "description": "CLI + TUI to scan, classify, and safely consolidate scattered git repos into a single directory",
+  "type": "module",
+  "license": "MIT",
+  "author": "Narendra Sisodiya (https://github.com/nsisodiya)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nsisodiya/repo-organizer.git"
+  },
+  "homepage": "https://github.com/nsisodiya/repo-organizer#readme",
+  "bugs": {
+    "url": "https://github.com/nsisodiya/repo-organizer/issues"
+  },
+  "keywords": [
+    "git",
+    "github",
+    "cli",
+    "tui",
+    "repository",
+    "organizer",
+    "repos",
+    "gh-cli"
+  ],
+  "bin": {
+    "ro": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "prepare": "npm run build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "commander": "^13.1.0",
+    "ink": "^5.2.0",
+    "ink-select-input": "^6.0.0",
+    "ink-text-input": "^6.0.0",
+    "minimatch": "^10.0.1",
+    "react": "^18.3.1",
+    "yaml": "^2.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "@types/react": "^18.3.18",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
