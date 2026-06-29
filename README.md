@@ -12,6 +12,7 @@ A CLI and terminal UI for scanning scattered git repositories, classifying them 
 - **Create GitHub repos** and push local-only projects (`gh repo create`)
 - **Migrate remotes** from GitLab, Bitbucket, or other hosts to GitHub
 - **Cleanup** stale artifact directories (e.g. `node_modules`) on an allowlist
+- **Fast create** — scaffold a new repo, publish to GitHub, open your editor (`ro create`)
 - **JSON output** for scripting (`ro scan`, `ro scan --pretty`)
 - **Action history** logged locally for auditability
 
@@ -67,7 +68,46 @@ ro scan --pretty
 
 # Force a fresh scan (ignore cache)
 ro scan --refresh --pretty
+
+# Fast-track a new GitHub repo (folder + git + push + open editor)
+ro create second-brain-ai
 ```
+
+### `ro create` — fast new repo
+
+One command to go from zero to coding:
+
+```bash
+ro create my-project
+```
+
+**What it does (in order):**
+
+1. Creates `~/Github/my-project` (uses `target_dir` from config)
+2. Runs `git init -b main`
+3. Adds a minimal `README.md` and `.gitignore` (`.DS_Store`, `node_modules`, `.env`)
+4. Creates an initial commit
+5. Publishes a **private** GitHub repo via `gh repo create` and pushes
+6. Runs `github .` to add the repo to **GitHub Desktop** (if the `github` CLI is installed)
+7. Opens the folder in your editor (Cursor, VS Code, Antigravity, Windsurf, Zed — first found)
+
+**Options:**
+
+| Flag | Description |
+|------|-------------|
+| `--public` | Create a public repo instead of `default_visibility` |
+| `--empty` | Git init only — no scaffold, no push (remote created on GitHub) |
+| `--no-open` | Skip opening the editor |
+| `--no-desktop` | Skip `github .` for GitHub Desktop |
+
+**Editor preference:** set `RO_EDITOR` to a CLI command or macOS app name:
+
+```bash
+export RO_EDITOR=cursor   # or code, antigravity, etc.
+ro create my-project
+```
+
+**Requirements:** `git` and `gh` on PATH, `gh auth login` completed.
 
 On first launch, `ro` creates a default config at `~/.config/repo-organizer/config.yaml`. Edit `scan_roots` and `target_dir` to match your machine before running a full scan.
 

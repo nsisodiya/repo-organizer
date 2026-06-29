@@ -3,6 +3,7 @@ import { Command } from "commander";
 import React from "react";
 import { render } from "ink";
 import { loadConfig } from "./config.js";
+import { createRepo } from "./commands/create.js";
 import { runScan } from "./scan.js";
 import { formatBytes } from "./store.js";
 import { App } from "./tui/App.js";
@@ -11,8 +12,26 @@ const program = new Command();
 
 program
   .name("ro")
-  .description("Repo Organizer — scan, classify, and consolidate git repos into ~/Github")
+  .description("Repo Organizer — scan, classify, consolidate, and create git repos")
   .version("0.1.0");
+
+program
+  .command("create <name>")
+  .description("Fast-track: create folder, git init, publish to GitHub, open editor")
+  .option("--public", "Create a public repo (default: private)")
+  .option("--empty", "Skip README/.gitignore scaffold (remote only, no push)")
+  .option("--no-open", "Do not open the folder in an editor")
+  .option("--no-desktop", "Do not run github . for GitHub Desktop")
+  .action((name: string, opts: { public?: boolean; empty?: boolean; noOpen?: boolean; noDesktop?: boolean }) => {
+  const config = loadConfig();
+  console.log(`Creating ${name} in ${config.target_dir}…\n`);
+  createRepo(name, {
+    visibility: opts.public ? "public" : undefined,
+    empty: opts.empty ?? false,
+    noOpen: opts.noOpen ?? false,
+    noDesktop: opts.noDesktop ?? false,
+  });
+});
 
 program
   .command("scan", { isDefault: false })
