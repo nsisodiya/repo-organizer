@@ -76,3 +76,22 @@ export interface ActionPreview {
   dryRun: string[];
   warnings: string[];
 }
+
+export type BulkActionType = "bulk_move" | "bulk_cleanup";
+
+export interface BulkActionPreview {
+  type: BulkActionType;
+  title: string;
+  explanation: string[];
+  eligible: RepoInfo[];
+  skipped: Array<{ repo: RepoInfo; reason: string }>;
+  dryRun: string[];
+  warnings: string[];
+  totalBytes?: number;
+}
+
+export interface BulkExecuteResult {
+  succeeded: string[];
+  failed: Array<{ name: string; error: string }>;
+  freedBytes?: number;
+}

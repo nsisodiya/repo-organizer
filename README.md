@@ -129,10 +129,32 @@ default_visibility: private
 
 ### Dashboard
 
+The dashboard shows category counts and an **Actions** menu (navigate with ↑↓, select with Enter):
+
+| Action | Description |
+|--------|-------------|
+| View repositories | Browse and act on individual repos |
+| Bulk move → target | Move all safe repos into `target_dir` |
+| Bulk cleanup artifacts | Delete allowlisted folders (e.g. `node_modules`) across repos |
+| Action history | View past executed actions |
+
 | Key | Action |
 |-----|--------|
-| `Enter` / `l` | Open repo list |
-| `h` | Open action history |
+| `↑` / `↓` | Navigate action menu |
+| `Enter` | Run selected action |
+| `r` | Rescan all repos |
+| `q` | Quit |
+
+### Bulk preview
+
+Shown after selecting a bulk action from the dashboard.
+
+| Key | Action |
+|-----|--------|
+| `y` | Continue to confirmation (when repos are eligible) |
+| `Esc` | Back to dashboard |
+
+Bulk previews explain what will happen, list eligible and skipped repos with reasons, and show command previews before you confirm.
 
 ### Repo list
 
@@ -174,6 +196,28 @@ Type **`yes`** (exactly) and press Enter to execute. `Esc` cancels.
 
 Every action follows the same safety flow: **preview → type `yes` → execute**. Nothing runs automatically.
 
+### Bulk move (dashboard action)
+
+Moves all eligible repositories into `target_dir/<repo-name>` in one operation.
+
+**Included:** repos outside `target_dir` with no name conflict, no uncommitted changes, and no existing folder at the destination.
+
+**Skipped:** dirty repos, name conflicts, repos already in target, and destinations that already exist.
+
+### Bulk cleanup (dashboard action)
+
+Deletes **regenerable artifact folders** (from `cleanup_allowlist`, default: `node_modules`) across multiple repos.
+
+**What cleanup means:**
+
+- Removes only allowlisted folder names (e.g. `node_modules`) — **not** your source code or `.git`
+- Artifacts can be recreated (`npm install`, etc.) when you work on the repo again
+- Repos with uncommitted changes are skipped for safety
+
+**Included:** repos with allowlisted artifacts and a clean working tree.
+
+**Skipped:** dirty repos and repos with nothing on the allowlist.
+
 ### Move (`needs_move`)
 
 Moves a repo from its current path to `target_dir/<name>` using `rename` (same filesystem).
@@ -206,7 +250,9 @@ Creates a GitHub repo, pushes, and optionally keeps the old remote renamed (e.g.
 
 ### Cleanup (`stale_cleanup`)
 
-Deletes allowlisted artifact directories (default: `node_modules`) when a repo is stale and has reclaimable disk usage.
+Deletes allowlisted artifact directories when a repo has reclaimable disk usage.
+
+**What cleanup means:** same as bulk cleanup — only `cleanup_allowlist` folders (e.g. `node_modules`) are removed; source code is untouched.
 
 **Safety notes:**
 
