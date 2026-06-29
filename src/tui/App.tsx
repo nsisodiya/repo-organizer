@@ -37,6 +37,7 @@ type View =
   | "preview"
   | "bulk_preview"
   | "confirm"
+  | "executing"
   | "history"
   | "scanning";
 
@@ -81,7 +82,7 @@ export function App(): React.ReactElement {
   const [confirmText, setConfirmText] = useState("");
   const [migrateWorkRemote, setMigrateWorkRemote] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => Promise<void>) | null>(null);
-  const [confirmReturnView, setConfirmReturnView] = useState<View>("detail");
+  const [executingMessage, setExecutingMessage] = useState<string | null>(null);
   const config = useMemo(() => loadConfig(), []);
 
   const refresh = useCallback(async () => {
@@ -164,7 +165,7 @@ export function App(): React.ReactElement {
   }, [summary, config.target_dir, bulkMoveCount, bulkCleanupCount, bulkCleanupBytes]);
 
   useInput((input, key) => {
-    if (view === "confirm" || view === "dashboard") return;
+    if (view === "confirm" || view === "dashboard" || view === "executing") return;
     if (input === "q") {
       exit();
       return;
@@ -204,9 +205,8 @@ export function App(): React.ReactElement {
         setPendingAction(null);
         setMigrateWorkRemote(false);
       }
-      if (input === "y" && pendingAction) {
+      if (key.return && pendingAction) {
         setConfirmText("");
-        setConfirmReturnView("detail");
         setView("confirm");
       }
     }
@@ -217,9 +217,13 @@ export function App(): React.ReactElement {
         setBulkPreview(null);
         setPendingAction(null);
       }
-      if (input === "y" && pendingAction && bulkPreview && bulkPreview.eligible.length > 0) {
+      if (
+        key.return &&
+        pendingAction &&
+        bulkPreview &&
+        bulkPreview.eligible.length > 0
+      ) {
         setConfirmText("");
-        setConfirmReturnView("dashboard");
         setView("confirm");
       }
     }
@@ -344,6 +348,41 @@ export function App(): React.ReactElement {
     };
     setPendingAction(() => action);
     showActionPreview(repo, workMigrate);
+  }
+
+  function runConfirmedAction(): void {
+    if (!pendingAction) return;
+
+    const message = bulkPreview
+      ? bulkPreview.title
+      : preview?.description ?? "Executing action";
+
+    setExecutingMessage(message);
+    setView("executing");
+
+    void (async () => {
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      try {
+        await pendingAction();
+      } finally {
+        setPendingAction(null);
+        setExecutingMessage("Rescanning repositories…");
+        await refresh();
+        setExecutingMessage(null);
+      }
+    })();
+  }
+
+  if (view === "executing") {
+    return (
+      <Box flexDirection="column" padding={1}>
+        <Text color="cyan" bold>
+          repo-organizer
+        </Text>
+        <Text>{executingMessage ?? "Working…"}</Text>
+        <Text dimColor>Please wait…</Text>
+      </Box>
+    );
   }
 
   if (view === "scanning") {
@@ -529,7 +568,7 @@ export function App(): React.ReactElement {
         <Box marginTop={1}>
           <Text dimColor>
             {bulkPreview.eligible.length > 0
-              ? "y: continue to confirm · Esc: back to dashboard"
+              ? "Enter: continue · type yes on next screen · Esc: back"
               : "No eligible repos — Esc: back to dashboard"}
           </Text>
         </Box>
@@ -572,7 +611,7 @@ export function App(): React.ReactElement {
           </Box>
         )}
         <Box marginTop={1}>
-          <Text dimColor>y: continue to confirm | Esc: back</Text>
+          <Text dimColor>Enter: continue · type yes on next screen | Esc: back</Text>
         </Box>
       </Box>
     );
@@ -582,8 +621,9 @@ export function App(): React.ReactElement {
     return (
       <Box flexDirection="column" padding={1}>
         <Text bold color="yellow">
-          Confirm action — type yes to execute
+          Confirm action
         </Text>
+        <Text dimColor>Type yes and press Enter to execute</Text>
         {bulkPreview && <Text>{bulkPreview.title}</Text>}
         {preview && <Text>{preview.description}</Text>}
         {bulkPreview && (
@@ -595,19 +635,15 @@ export function App(): React.ReactElement {
           <Text color="red">Work-remote migration — explicit approval required</Text>
         )}
         <Box marginTop={1}>
-          <Text>Confirm: </Text>
+          <Text>yes: </Text>
           <TextInput
             value={confirmText}
             onChange={setConfirmText}
             onSubmit={(val) => {
               if (val.toLowerCase() === "yes") {
-                void pendingAction().then(() => {
-                  setView(confirmReturnView);
-                  setPendingAction(null);
-                  void refresh();
-                });
+                runConfirmedAction();
               } else {
-                setError("Action cancelled — confirmation must be exactly 'yes'.");
+                setError("Action cancelled — type exactly 'yes' to execute.");
                 setView(bulkPreview ? "bulk_preview" : "preview");
               }
             }}

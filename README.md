@@ -151,10 +151,10 @@ Shown after selecting a bulk action from the dashboard.
 
 | Key | Action |
 |-----|--------|
-| `y` | Continue to confirmation (when repos are eligible) |
+| `Enter` | Continue to confirmation (when repos are eligible) |
 | `Esc` | Back to dashboard |
 
-Bulk previews explain what will happen, list eligible and skipped repos with reasons, and show command previews before you confirm.
+Bulk previews explain what will happen, list eligible and skipped repos with reasons, and show command previews before you confirm. On the next screen, type **yes** to execute.
 
 ### Repo list
 
@@ -179,12 +179,12 @@ Bulk previews explain what will happen, list eligible and skipped repos with rea
 
 | Key | Action |
 |-----|--------|
-| `y` | Continue to confirmation |
+| `Enter` | Continue to confirmation |
 | `Esc` | Cancel and return to detail |
 
 ### Confirm
 
-Type **`yes`** (exactly) and press Enter to execute. `Esc` cancels.
+Type **`yes`** at the `yes:` prompt and press Enter to execute. `Esc` cancels.
 
 ### History
 
