@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { formatBytes } from "../store.js";
 import type { BulkActionPreview, BulkExecuteResult, Config, RepoInfo } from "../types.js";
 import { executeCleanup } from "./cleanup.js";
+import { executeDsStoreCleanup } from "./dsstore.js";
 import { executeMove } from "./move.js";
 
 export function getBulkMoveSkippedReason(repo: RepoInfo): string | null {
@@ -26,6 +27,10 @@ export function getBulkCleanupSkippedReason(repo: RepoInfo): string | null {
 
 export function isBulkCleanupEligible(repo: RepoInfo): boolean {
   return getBulkCleanupSkippedReason(repo) === null;
+}
+
+export function isBulkDsStoreEligible(repo: RepoInfo): boolean {
+  return repo.dsStoreFiles.length > 0;
 }
 
 export function previewBulkMove(repos: RepoInfo[], targetDir: string): BulkActionPreview {
@@ -118,6 +123,37 @@ export function previewBulkCleanup(
   };
 }
 
+export function previewBulkDsStore(repos: RepoInfo[]): BulkActionPreview {
+  const eligible = repos.filter(isBulkDsStoreEligible);
+  const totalBytes = eligible.reduce((sum, r) => sum + r.dsStoreBytes, 0);
+  const totalFiles = eligible.reduce((sum, r) => sum + r.dsStoreFiles.length, 0);
+
+  return {
+    type: "bulk_ds_store",
+    title: "Bulk remove untracked .DS_Store files",
+    explanation: [
+      "Deletes untracked .DS_Store files reported by git status.",
+      "macOS creates these Finder metadata files; they are safe to remove.",
+      "",
+      "Only untracked .DS_Store files are deleted — tracked files and",
+      "all other changes in the repo are left untouched.",
+      "",
+      `Eligible: ${eligible.length} repo(s), ${totalFiles} file(s), ${formatBytes(totalBytes)}`,
+    ],
+    eligible,
+    skipped: [],
+    dryRun: eligible.flatMap((r) =>
+      r.dsStoreFiles.map(
+        (f) => `rm "${f.relativePath}"  # ${r.name} ${formatBytes(f.sizeBytes)}`,
+      ),
+    ),
+    warnings: [
+      "Repos stay dirty if they have other uncommitted changes besides .DS_Store.",
+    ],
+    totalBytes,
+  };
+}
+
 export function executeBulkMove(repos: RepoInfo[]): BulkExecuteResult {
   const succeeded: string[] = [];
   const failed: Array<{ name: string; error: string }> = [];
@@ -143,6 +179,24 @@ export function executeBulkCleanup(repos: RepoInfo[]): BulkExecuteResult {
       freedBytes += res.freedBytes ?? 0;
     } else {
       failed.push({ name: repo.name, error: res.error ?? "cleanup failed" });
+    }
+  }
+
+  return { succeeded, failed, freedBytes };
+}
+
+export function executeBulkDsStore(repos: RepoInfo[]): BulkExecuteResult {
+  const succeeded: string[] = [];
+  const failed: Array<{ name: string; error: string }> = [];
+  let freedBytes = 0;
+
+  for (const repo of repos) {
+    const res = executeDsStoreCleanup(repo);
+    if (res.success) {
+      succeeded.push(repo.name);
+      freedBytes += res.freedBytes ?? 0;
+    } else {
+      failed.push({ name: repo.name, error: res.error ?? "ds_store cleanup failed" });
     }
   }
 

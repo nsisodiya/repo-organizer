@@ -4,10 +4,13 @@ import SelectInput from "ink-select-input";
 import TextInput from "ink-text-input";
 import {
   executeBulkCleanup,
+  executeBulkDsStore,
   executeBulkMove,
   isBulkCleanupEligible,
+  isBulkDsStoreEligible,
   isBulkMoveEligible,
   previewBulkCleanup,
+  previewBulkDsStore,
   previewBulkMove,
 } from "../actions/bulk.js";
 import { executeCleanup, previewCleanup } from "../actions/cleanup.js";
@@ -122,6 +125,19 @@ export function App(): React.ReactElement {
     [summary],
   );
 
+  const bulkDsStoreCount = useMemo(
+    () => (summary ? summary.repos.filter(isBulkDsStoreEligible).length : 0),
+    [summary],
+  );
+
+  const bulkDsStoreFiles = useMemo(
+    () =>
+      summary
+        ? summary.repos.reduce((sum, r) => sum + r.dsStoreFiles.length, 0)
+        : 0,
+    [summary],
+  );
+
   const filteredRepos = useMemo(() => {
     if (!summary) return [];
     let repos = summary.repos;
@@ -158,11 +174,23 @@ export function App(): React.ReactElement {
         value: "bulk_cleanup" as const,
       },
       {
+        label: `Bulk remove .DS_Store (${bulkDsStoreCount} repos, ${bulkDsStoreFiles} files)`,
+        value: "bulk_ds_store" as const,
+      },
+      {
         label: "Action history",
         value: "history" as const,
       },
     ];
-  }, [summary, config.target_dir, bulkMoveCount, bulkCleanupCount, bulkCleanupBytes]);
+  }, [
+    summary,
+    config.target_dir,
+    bulkMoveCount,
+    bulkCleanupCount,
+    bulkCleanupBytes,
+    bulkDsStoreCount,
+    bulkDsStoreFiles,
+  ]);
 
   useInput((input, key) => {
     if (view === "confirm" || view === "dashboard" || view === "executing") return;
@@ -268,6 +296,29 @@ export function App(): React.ReactElement {
       } else {
         setResultMsg(
           `Cleaned ${result.succeeded.length}, failed ${result.failed.length}, freed ${freed}.`,
+        );
+        setError(result.failed.map((f) => `${f.name}: ${f.error}`).join("; "));
+      }
+      setBulkPreview(null);
+    });
+    setView("bulk_preview");
+  }
+
+  function startBulkDsStore(): void {
+    if (!summary) return;
+    const bp = previewBulkDsStore(summary.repos);
+    setBulkPreview(bp);
+    setPreview(null);
+    setPendingAction(() => async () => {
+      const result = executeBulkDsStore(bp.eligible);
+      const freed = formatBytes(result.freedBytes ?? 0);
+      if (result.failed.length === 0) {
+        setResultMsg(
+          `Removed .DS_Store from ${result.succeeded.length} repo(s), freed ${freed}.`,
+        );
+      } else {
+        setResultMsg(
+          `Removed from ${result.succeeded.length}, failed ${result.failed.length}, freed ${freed}.`,
         );
         setError(result.failed.map((f) => `${f.name}: ${f.error}`).join("; "));
       }
@@ -485,6 +536,9 @@ export function App(): React.ReactElement {
                 case "bulk_cleanup":
                   startBulkCleanup();
                   break;
+                case "bulk_ds_store":
+                  startBulkDsStore();
+                  break;
                 case "history":
                   setView("history");
                   break;
@@ -520,7 +574,10 @@ export function App(): React.ReactElement {
           </Text>
           {showRepos.map((r) => (
             <Text key={r.path} color="gray">
-              • {r.name} — {truncate(r.path, 50)}
+              • {r.name} —{" "}
+              {bulkPreview.type === "bulk_ds_store"
+                ? `${r.dsStoreFiles.length} file(s)`
+                : truncate(r.path, 50)}
             </Text>
           ))}
           {bulkPreview.eligible.length > 12 && (
@@ -682,6 +739,12 @@ export function App(): React.ReactElement {
               : "—"}
           </Text>
           <Text>Artifacts: {formatBytes(repo.artifactBytes)}</Text>
+          {repo.dsStoreFiles.length > 0 && (
+            <Text>
+              Untracked .DS_Store: {repo.dsStoreFiles.length} file(s) (
+              {formatBytes(repo.dsStoreBytes)})
+            </Text>
+          )}
           {repo.nameConflictWith && (
             <Text color="red">Conflict: {repo.nameConflictWith}</Text>
           )}

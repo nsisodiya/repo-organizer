@@ -6,6 +6,7 @@ import {
   getGitStatus,
   getLastCommit,
   getRemotes,
+  getUntrackedDsStoreFiles,
   isGitHubHost,
   isWorkRemote,
 } from "./analyzer.js";
@@ -70,6 +71,8 @@ export function analyzeRepo(repoPath: string, config: Config): Omit<RepoInfo, "c
   const branch = getCurrentBranch(repoPath);
   const artifacts = getArtifacts(repoPath, config.cleanup_allowlist);
   const artifactBytes = artifacts.reduce((sum, a) => sum + a.sizeBytes, 0);
+  const dsStoreFiles = getUntrackedDsStoreFiles(repoPath);
+  const dsStoreBytes = dsStoreFiles.reduce((sum, f) => sum + f.sizeBytes, 0);
 
   return {
     path: repoPath,
@@ -86,6 +89,8 @@ export function analyzeRepo(repoPath: string, config: Config): Omit<RepoInfo, "c
     branch,
     artifacts,
     artifactBytes,
+    dsStoreFiles,
+    dsStoreBytes,
   };
 }
 
@@ -136,6 +141,10 @@ export function classifyRepo(
   if (isStale) {
     candidates.add("stale_cleanup");
     tags.stale = true;
+  }
+
+  if (base.dsStoreFiles.length > 0) {
+    tags.ds_store = true;
   }
 
   if (

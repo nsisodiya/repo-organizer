@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import type { ArtifactInfo, Config, RemoteInfo } from "./types.js";
+import type { ArtifactInfo, Config, DsStoreFileInfo, RemoteInfo } from "./types.js";
 
 function runGit(repoPath: string, args: string[]): string {
   try {
@@ -54,6 +54,45 @@ export function getGitStatus(repoPath: string): { isDirty: boolean; dirtyCount: 
   }
   const lines = output.split("\n").filter(Boolean);
   return { isDirty: lines.length > 0, dirtyCount: lines.length };
+}
+
+function parsePorcelainPath(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+    return trimmed
+      .slice(1, -1)
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, "\\");
+  }
+  return trimmed;
+}
+
+export function getUntrackedDsStoreFiles(repoPath: string): DsStoreFileInfo[] {
+  const output = runGit(repoPath, ["status", "--porcelain", "-u"]);
+  if (!output) return [];
+
+  const files: DsStoreFileInfo[] = [];
+  for (const line of output.split("\n").filter(Boolean)) {
+    if (!line.startsWith("?? ")) continue;
+
+    const relativePath = parsePorcelainPath(line.slice(3));
+    const baseName = relativePath.split("/").pop() ?? relativePath;
+    if (baseName !== ".DS_Store") continue;
+
+    const fullPath = join(repoPath, relativePath);
+    let sizeBytes = 0;
+    try {
+      if (existsSync(fullPath)) {
+        sizeBytes = statSync(fullPath).size;
+      }
+    } catch {
+      continue;
+    }
+
+    files.push({ relativePath, path: fullPath, sizeBytes });
+  }
+
+  return files;
 }
 
 export function getLastCommit(repoPath: string): {

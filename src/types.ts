@@ -30,6 +30,12 @@ export interface ArtifactInfo {
   sizeBytes: number;
 }
 
+export interface DsStoreFileInfo {
+  relativePath: string;
+  path: string;
+  sizeBytes: number;
+}
+
 export interface RepoInfo {
   path: string;
   name: string;
@@ -45,6 +51,8 @@ export interface RepoInfo {
   branch: string | null;
   artifacts: ArtifactInfo[];
   artifactBytes: number;
+  dsStoreFiles: DsStoreFileInfo[];
+  dsStoreBytes: number;
   category: RepoCategory;
   tags: string[];
   suggestedAction: string;
@@ -77,7 +85,7 @@ export interface ActionPreview {
   warnings: string[];
 }
 
-export type BulkActionType = "bulk_move" | "bulk_cleanup";
+export type BulkActionType = "bulk_move" | "bulk_cleanup" | "bulk_ds_store";
 
 export interface BulkActionPreview {
   type: BulkActionType;

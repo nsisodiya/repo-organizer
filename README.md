@@ -136,6 +136,7 @@ The dashboard shows category counts and an **Actions** menu (navigate with ↑�
 | View repositories | Browse and act on individual repos |
 | Bulk move → target | Move all safe repos into `target_dir` |
 | Bulk cleanup artifacts | Delete allowlisted folders (e.g. `node_modules`) across repos |
+| Bulk remove .DS_Store | Delete untracked `.DS_Store` files across repos |
 | Action history | View past executed actions |
 
 | Key | Action |
@@ -217,6 +218,18 @@ Deletes **regenerable artifact folders** (from `cleanup_allowlist`, default: `no
 **Included:** repos with allowlisted artifacts and a clean working tree.
 
 **Skipped:** dirty repos and repos with nothing on the allowlist.
+
+### Bulk remove .DS_Store (dashboard action)
+
+Deletes **untracked** `.DS_Store` files reported by `git status` across multiple repos.
+
+**What it does:**
+
+- Removes only untracked `.DS_Store` files (macOS Finder metadata)
+- Does not touch tracked files, source code, or other uncommitted changes
+- Repos with only `.DS_Store` as untracked changes become clean after removal
+
+**Included:** any repo with at least one untracked `.DS_Store` file.
 
 ### Move (`needs_move`)
 
