@@ -22,16 +22,16 @@ program
   .option("--empty", "Skip README/.gitignore scaffold (remote only, no push)")
   .option("--no-open", "Do not open the folder in an editor")
   .option("--no-desktop", "Do not run github . for GitHub Desktop")
-  .action((name: string, opts: { public?: boolean; empty?: boolean; noOpen?: boolean; noDesktop?: boolean }) => {
-  const config = loadConfig();
-  console.log(`Creating ${name} in ${config.target_dir}…\n`);
-  createRepo(name, {
-    visibility: opts.public ? "public" : undefined,
-    empty: opts.empty ?? false,
-    noOpen: opts.noOpen ?? false,
-    noDesktop: opts.noDesktop ?? false,
+  .action(async (name: string, opts: { public?: boolean; empty?: boolean; noOpen?: boolean; noDesktop?: boolean }) => {
+    const config = loadConfig();
+    console.log(`Creating ${name} in ${config.target_dir}…\n`);
+    await createRepo(name, {
+      visibility: opts.public ? "public" : undefined,
+      empty: opts.empty ?? false,
+      noOpen: opts.noOpen ?? false,
+      noDesktop: opts.noDesktop ?? false,
+    });
   });
-});
 
 program
   .command("scan", { isDefault: false })

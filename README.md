@@ -12,7 +12,7 @@ A CLI and terminal UI for scanning scattered git repositories, classifying them 
 - **Create GitHub repos** and push local-only projects (`gh repo create`)
 - **Migrate remotes** from GitLab, Bitbucket, or other hosts to GitHub
 - **Cleanup** stale artifact directories (e.g. `node_modules`) on an allowlist
-- **Fast create** — scaffold a new repo, publish to GitHub, open your editor (`ro create`)
+- **Fast create** — preflight GitHub, then scaffold or check out an existing repo (`ro create`)
 - **JSON output** for scripting (`ro scan`, `ro scan --pretty`)
 - **Action history** logged locally for auditability
 
@@ -83,13 +83,16 @@ ro create my-project
 
 **What it does (in order):**
 
-1. Creates `~/Github/my-project` (uses `target_dir` from config)
-2. Runs `git init -b main`
-3. Adds a minimal `README.md` and `.gitignore` (`.DS_Store`, `node_modules`, `.env`)
-4. Creates an initial commit
-5. Publishes a **private** GitHub repo via `gh repo create` and pushes
-6. Runs `github .` to add the repo to **GitHub Desktop** (if the `github` CLI is installed)
-7. Opens the folder in your editor (Cursor, VS Code, Antigravity, Windsurf, Zed — first found)
+1. Checks whether `<your-gh-login>/my-project` already exists on GitHub
+2. If it already exists and is already cloned locally, prints that path and tells you to `cd` into it
+3. If it exists remotely but is not cloned locally, asks whether to check it out
+4. Otherwise creates `~/Github/my-project` (uses `target_dir` from config)
+5. Runs `git init -b main`
+6. Adds a minimal `README.md` and `.gitignore` (`.DS_Store`, `node_modules`, `.env`)
+7. Creates an initial commit
+8. Publishes a **private** GitHub repo via `gh repo create` and pushes
+9. Runs `github .` to add the repo to **GitHub Desktop** (if the `github` CLI is installed)
+10. Opens the folder in your editor (Cursor, VS Code, Antigravity, Windsurf, Zed — first found)
 
 **Options:**
 
